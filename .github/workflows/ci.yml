@@ -1,0 +1,93 @@
+name: CI
+
+# Cheap, honest checks only. The real build is deliberately NOT gated here: it needs
+# Android build-tools plus the 27 MB platform jar that setup.sh fetches, and it is shaped
+# for Termux (see the README). A green tick here means "the scripts parse, lint, and agree
+# with each other", not "the APK builds".
+
+on:
+  push:
+    branches: [dev, main]
+  pull_request:
+    branches: [main, dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Shell syntax
+        run: |
+          for f in build.sh setup.sh cdp-webview.sh display.sh; do
+            printf '%s: ' "$f"
+            bash -n "$f" && echo "ok"
+          done
+
+      - name: ShellCheck
+        run: shellcheck --severity=warning -s bash -x build.sh setup.sh cdp-webview.sh display.sh
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Node syntax
+        run: node --check cdp.mjs
+
+      - name: XML well-formed
+        run: |
+          python3 - <<'PY'
+          import xml.etree.ElementTree as ET
+          for f in ("AndroidManifest.xml", "res/values/strings.xml"):
+              ET.parse(f)
+              print(f"{f}: well-formed")
+          PY
+
+      - name: Package name agrees everywhere
+        # A rename once left display.sh matching an escaped form of the OLD package, which
+        # silently reported "is the app installed?" while the app was running. Anything that
+        # hardcodes the package has to move together.
+        run: |
+          python3 - <<'PY'
+          import pathlib, re, sys
+          import xml.etree.ElementTree as ET
+
+          pkg = ET.parse("AndroidManifest.xml").getroot().get("package")
+          print(f"AndroidManifest.xml package = {pkg}")
+          bad = []
+
+          for f in ("setup.sh", "cdp-webview.sh", "display.sh"):
+              if f"PKG={pkg}" not in pathlib.Path(f).read_text():
+                  bad.append(f"{f} does not set PKG={pkg}")
+
+          # build.sh checks the compiled class dir, so it needs the package as a path
+          want = "classes/" + pkg.replace(".", "/")
+          if want not in pathlib.Path("build.sh").read_text():
+              bad.append(f"build.sh does not reference {want}")
+
+          # No stale escaped package pattern in code. Markdown is excluded on purpose:
+          # AGENTS.md quotes the old pattern as the worked example of this very bug.
+          escaped = "\\.".join(pkg.split("."))
+          for p in pathlib.Path(".").rglob("*"):
+              if p.is_file() and p.suffix in (".sh", ".mjs", ".xml", ".java"):
+                  text = p.read_text(errors="ignore")
+                  for m in re.finditer(r"\b[a-z0-9_]+(?:\\\.[a-z0-9_]+){2,}", text):
+                      if m.group(0) != escaped:
+                          bad.append(f"{p}: stale escaped package pattern {m.group(0)!r}")
+
+          if bad:
+              print("\n".join("FAIL " + b for b in bad))
+              sys.exit(1)
+          print("package references consistent")
+          PY
+
+      - name: Bundled page matches what setup.sh asserts
+        run: |
+          title=$(python3 -c "import re,pathlib;print(re.search(r'<title>(.*?)</title>', pathlib.Path('assets/index.html').read_text()).group(1))")
+          echo "assets/index.html title: $title"
+          grep -qF "\"$title\"" setup.sh || { echo "setup.sh does not assert the title '$title'"; exit 1; }
+          echo "ok"
