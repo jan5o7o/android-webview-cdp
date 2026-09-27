@@ -69,7 +69,7 @@ overlay() {
     case "$w" in ''|*[!0-9]*) echo "bad size '$spec' — want WxH@DPI, e.g. 1080x2340@420" >&2; exit 1;; esac
     case "$h" in ''|*[!0-9]*) echo "bad height in '$spec'" >&2; exit 1;; esac
     setting="${w}x${h}/${dpi}"
-    local before after id task vp px
+    local before after id task vp
 
     before="$(all_ids)"
     # `settings delete` (not `put ... ""`, which errors with "Bad arguments") is what

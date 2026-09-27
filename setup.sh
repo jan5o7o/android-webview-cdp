@@ -25,7 +25,7 @@
 # Off-device (laptop + USB): run as `bash setup.sh` — this shebang is a Termux path.
 
 set -uo pipefail
-cd "$(dirname "$0")"
+cd "$(dirname "$0")" || exit 1
 
 PKG=app.so7o.webview
 ACTIVITY="$PKG/.MainActivity"
