@@ -1,5 +1,7 @@
 # So7o Android Webview Shell
 
+[![CI](https://github.com/jan5o7o/android-webview-cdp/actions/workflows/ci.yml/badge.svg)](https://github.com/jan5o7o/android-webview-cdp/actions/workflows/ci.yml)
+
 A 20 KB single-Activity Android app that hosts a **WebView you can drive over the
 Chrome DevTools Protocol from Termux** — plus the Termux-side tooling to do it.
 Built on-device, no Gradle, no Android SDK — a hand-rolled `build.sh`
@@ -1017,6 +1019,14 @@ the signed APK attached.
 [`AGENTS.md`](AGENTS.md) carries the fuller version, including a cold-start checklist for the adb
 connection — the pairing step is the only part that needs a human, and it behaves slightly
 differently every time.
+
+CI runs on pushes and pull requests: shell syntax, ShellCheck, `node --check`, XML
+well-formedness, and two consistency checks — that everything hardcoding the package agrees with
+`AndroidManifest.xml` (including the absence of a stale *escaped* pattern, which is a bug that sat
+in `display.sh` reporting "is the app installed?" while the app was running), and that the bundled
+page's `<title>` is the string `setup.sh` asserts. **The APK build is not gated**: it needs Android
+build-tools plus the 27 MB platform jar and is shaped for Termux, so a green tick means the scripts
+parse, lint and agree — not that the app builds.
 
 ## License
 
