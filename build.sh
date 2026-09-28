@@ -35,6 +35,8 @@ fi
 KSPASS="${KSPASS:?set KSPASS in the environment, or create $KSFILE containing it}"
 MIN_SDK=30
 TARGET_SDK=36
+VERSION_CODE="${VERSION_CODE:-4}"
+VERSION_NAME="${VERSION_NAME:-0.4}"
 
 rm -rf "$BUILD" "$OUT"
 mkdir -p "$BUILD/res" "$BUILD/classes" "$BUILD/gen" "$BUILD/dex" "$OUT"
@@ -51,7 +53,7 @@ aapt2 link \
   -A "$ROOT/assets" \
   --min-sdk-version "$MIN_SDK" \
   --target-sdk-version "$TARGET_SDK" \
-  --version-code 1 --version-name 0.1 \
+  --version-code "$VERSION_CODE" --version-name "$VERSION_NAME" \
   "$BUILD/res.zip"
 
 echo "==> 3/5 javac"

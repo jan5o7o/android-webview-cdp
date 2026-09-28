@@ -33,7 +33,7 @@ old URL). **`dev` is the default branch.**
 ### Releases
 
 1. Bump `versionCode` / `versionName` in `AndroidManifest.xml` — they are the source of truth
-   (currently `1` / `0.1`).
+   (currently `4` / `0.4`).
 2. PR `dev` → `main` (the ruleset requires the PR), merge.
 3. `git tag -a v0.1.0 -m "…" && git push origin v0.1.0`, tagged on `main`.
 4. `gh release create v0.1.0 out/so7o-webview.apk --title … --notes …` — attach the signed APK.
@@ -63,6 +63,13 @@ old URL). **`dev` is the default branch.**
   a plain string sweep will miss it — grep for the escaped form too.
 - **Keep `## Verification status` honest.** Move a row up only after re-testing it on a device,
   and say when a row predates a change that would invalidate it.
+- **A gate is not implemented until the *default refusal* is answered.** A bare WebView denies
+  `onPermissionRequest`, ignores `<input type=file>`, drops `DownloadListener` targets, replaces
+  the view on `window.open`, and swallows JS dialogs — all silently, with no error the page can
+  read. The README's [gates table](../README.md#gates-a-bare-webview-refuses) lists what this app
+  answers and what it does not. Microphone capture is the current open item: implemented, grant
+  path verified, and refused by the device (`NotReadableError`) with permission and app-op both
+  `allowed` — do not paper over it when adding rows to `## Verified`.
 
 ## Picking the work back up
 
